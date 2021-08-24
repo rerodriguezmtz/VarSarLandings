@@ -1,6 +1,8 @@
+# Code used for manuscript "Spatio-temporal variability of pelagic Sargassum landings on the northern Mexican Caribbean"
+
 Sys.setenv(TZ='GMT')
 rm(list=ls(all=TRUE))
-setwd("~/GitHub/VarSarLand")
+setwd("D:/GitHub/VarSarLandings")
 VS= read.csv("VolSar.csv", sep = ",")
 
 #Load libraries
@@ -26,31 +28,34 @@ VS$Year = as.factor(VS$Year)
 VS$Month = as.factor(VS$Month)
 VS$Site = as.factor(VS$Site)
 
-# Test for normality
-library(stats)
-shapiro.test(VS$m3km) # p <0.05 - distribution is not normal
-
-##Test for homogeneity of variances 
-library(asbio)
-lm1<-lm(VS$m3km~VS$Year)
-modlevene.test(residuals(lm1),VS$Year)# variances are homogeneous
-
 ### Order output
 VS$Year=factor(VS$Year, levels = c("2018", "2019"))
 
-# Volume per year
+# Sargasso volume per year
 TableYear<- ddply(VS, c("Year"), function(d) {c(Tot = round(sum(d$Volume),2),
                                                         Min = round(min(d$m3km),2),
-                                                        Max = round(max(d$m3km),2))})  
+                                                        Max = round(max(d$m3km),2),
+                                                        Mean = round(mean(d$m3km),2),
+                                                        SD = round(sd(d$m3km),2))})  
 TableYear
 
 mean(VS$m3km)
 
-# Volume per year per site
+# Sargasso volume per year per site
 TableYear<- ddply(VS, c("Year", "Site"), function(d) {c(Tot = round(sum(d$Volume),2),
                                                 Min = round(min(d$m3km),2),
-                                                Max = round(max(d$m3km),2))})  
+                                                Max = round(max(d$m3km),2),
+                                                Mean = round(mean(d$m3km),2),
+                                                SD = round(sd(d$m3km),2))})  
 TableYear
+
+# Sargasso volume per year per month
+TableMonth<- ddply(VS, c("Year", "Month"), function(d) {c(Tot = round(sum(d$Volume),2),
+                                                        Min = round(min(d$m3km),2),
+                                                        Max = round(max(d$m3km),2),
+                                                        Mean = round(mean(d$m3km),2),
+                                                        SD = round(sd(d$m3km),2))})  
+TableMonth
 
 # bootstrapped IC function, where x is the data set
 ic=function(x) {
@@ -178,20 +183,16 @@ timePlot(SED, pollutant = c("m3km", "SeaTemp"), y.relation = "free")
 
 # Comparison of curves between Satellite vs Hotels data (Kolmogorov-Smirnov tests)-Supp table 2
 # All test are done with proportion data to allow for equivalent scaling. 
-SatHot= read.csv("Beach & Sea.csv", colClasses=c(rep("factor",3), rep("numeric",2)), header=T) # OJO: LOs valores de sargazo son en m3/km para las playas y millones de toneladas para el mar 
+SatHot= read.csv("Beach & Sea2.csv", colClasses=c(rep("factor",3), rep("numeric",2)), header=T) # OJO: LOs valores de sargazo son en m3/km para las playas y millones de toneladas para el mar 
 
 # Are Satellite curves of 2018 = 2019?  
 car.18 <- SatHot[SatHot$Site=="Sea" & SatHot$Year=="2018", 5] 
 car.19 <- SatHot[SatHot$Site=="Sea" & SatHot$Year=="2019", 5]    
 
-Month=1:12
-plot (Month, car.18, type="l", lwd=4,  ylim= c(0, 0.3), main= "Sea 2018 vs 2019")
-lines (Month, car.19, type="l", lty= 2, lwd=4, col= "red") 
-
 ks.test(car.18, car.19) # compares empirical distributions, not raw data
 
-plot(ecdf(car.18),verticals=T)
-plot(ecdf(car.19), add=T, verticals=T, col=" red")
+EEZ.18 <- SatHot[SatHot$Site=="EEZ" & SatHot$Year=="2018", 5] 
+EEZ.19 <- SatHot[SatHot$Site=="EEZ" & SatHot$Year=="2019", 5]    
 
 # Are Satellite curves = Beach curves?
 
@@ -201,5 +202,5 @@ site.18 <- SatHot[SatHot$Site==site & SatHot$Year=="2018", 5] # proportion of m3
 site.19 <- SatHot[SatHot$Site==site & SatHot$Year=="2019", 5]
 
 ks.test(car.18, site.18); ks.test(car.19, site.19)
-
+ks.test(EEZ.18, site.18); ks.test(EEZ.19, site.19)
 
